@@ -2541,12 +2541,12 @@
                         </div>
                     </div>
 
-                    <!-- TAB BARU: INVENTORY / DATA ASET PERUSAHAAN (KHUSUS FINANCE MANAGER & DIREKTUR) -->
+                    <!-- TAB BARU: INVENTORY / DATA ASET PERUSAHAAN (Akses penuh: Finance Manager & Direktur. Input-only: General Affair & IT & Technical Support) -->
                     <div v-if="activeTab === 'inventory' && canAccessInventory" class="space-y-6">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="font-bold text-slate-800 text-lg">Inventory Aset Perusahaan</h3>
-                                <p class="text-xs text-slate-500">Pendataan aset perusahaan (elektronik, furniture, kendaraan, peralatan kantor, dsb). Khusus akses Finance Manager & Direktur.</p>
+                                <p class="text-xs text-slate-500">Pendataan aset perusahaan (elektronik, furniture, kendaraan, peralatan kantor, dsb). Akses penuh: Finance Manager & Direktur. General Affair &amp; IT &amp; Technical Support: khusus input data baru (tidak bisa ubah/hapus).</p>
                             </div>
                             <button @click="openModal('addInventoryAset')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition flex items-center gap-2">
                                 <i class="fa-solid fa-plus"></i> Tambah Aset
@@ -2617,7 +2617,7 @@
                                         <td class="py-3 px-4 text-right text-xs font-semibold">{{ formatRupiah(a.hargaPerolehan) }}</td>
                                         <td class="py-3 px-4 text-xs">{{ a.penanggungJawab || '-' }}</td>
                                         <td class="py-3 px-4 text-center">
-                                            <div class="flex items-center justify-center gap-2">
+                                            <div v-if="canEditDeleteInventory" class="flex items-center justify-center gap-2">
                                                 <button @click="editInventoryAset(a)" class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
@@ -2625,6 +2625,7 @@
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
+                                            <span v-else class="text-slate-300 text-xs">-</span>
                                         </td>
                                     </tr>
                                     <tr v-if="filteredInventoryAset.length === 0">
@@ -2637,10 +2638,13 @@
                     </div>
 
                     <!-- TAB 8: DATABASE & SYSTEM CONFIGURATION (SUPER ADMIN ONLY) -->
-                    <div v-if="activeTab === 'database' && isSuperAdmin" class="space-y-6">
+                    <div v-if="activeTab === 'database' && canAccessDatabaseMenu" class="space-y-6">
                         <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                             <h3 class="font-bold text-slate-800 text-lg mb-2">Manajemen Database & Backup System</h3>
-                            <p class="text-xs text-slate-500 mb-6">Kelola pencadangan data, pemulihan data, atau pengosongan sistem PT MBS.</p>
+                            <p class="text-xs text-slate-500 mb-6">
+                                <span v-if="canRestoreOrClearDatabase">Kelola pencadangan data, pemulihan data, atau pengosongan sistem PT MBS.</span>
+                                <span v-else>Akses terbatas: Anda hanya dapat mengunduh Backup JSON. Fitur Restore & Kosongkan Data khusus Super Admin.</span>
+                            </p>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div class="p-5 border border-slate-200 rounded-2xl bg-blue-50/50 flex flex-col justify-between">
@@ -2654,9 +2658,13 @@
                                     <button @click="downloadBackup" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow">
                                         <i class="fa-solid fa-file-export mr-1"></i> Download Backup JSON
                                     </button>
+                                    <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                                        <i class="fa-solid fa-circle-info mr-1"></i>
+                                        Di Chrome/Edge, akan muncul dialog untuk memilih folder penyimpanan. Di browser lain, file otomatis masuk ke folder Download.
+                                    </p>
                                 </div>
 
-                                <div class="p-5 border border-slate-200 rounded-2xl bg-emerald-50/50 flex flex-col justify-between">
+                                <div v-if="canRestoreOrClearDatabase" class="p-5 border border-slate-200 rounded-2xl bg-emerald-50/50 flex flex-col justify-between">
                                     <div>
                                         <div class="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-3 text-lg">
                                             <i class="fa-solid fa-upload"></i>
@@ -2670,7 +2678,7 @@
                                     </label>
                                 </div>
 
-                                <div class="p-5 border border-rose-200 rounded-2xl bg-rose-50/50 flex flex-col justify-between">
+                                <div v-if="canRestoreOrClearDatabase" class="p-5 border border-rose-200 rounded-2xl bg-rose-50/50 flex flex-col justify-between">
                                     <div>
                                         <div class="w-10 h-10 bg-rose-600 text-white rounded-xl flex items-center justify-center mb-3 text-lg">
                                             <i class="fa-solid fa-trash-can"></i>
@@ -3653,7 +3661,9 @@
             </div>
         </div>
 
-        <!-- MODAL: TAMBAH/EDIT INVENTORY ASET PERUSAHAAN (KHUSUS FINANCE MANAGER & DIREKTUR) -->
+        <!-- MODAL: TAMBAH/EDIT INVENTORY ASET PERUSAHAAN
+             (Tambah: Finance Manager, Direktur, General Affair, IT & Technical Support.
+              Edit: HANYA Finance Manager & Direktur - tombol edit disembunyikan untuk role lain) -->
         <div v-if="modals.addInventoryAset" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <h3 class="font-bold text-slate-800 text-lg mb-1">{{ invAsetForm.id ? 'Edit Aset' : 'Tambah Aset' }}</h3>
@@ -5161,7 +5171,7 @@
                     if (canAccessInventory.value) {
                         menu.push({ id: 'inventory', label: 'Inventory Aset Perusahaan', icon: 'fa-solid fa-boxes-stacked' });
                     }
-                    if (isSuperAdmin.value) {
+                    if (canAccessDatabaseMenu.value) {
                         menu.push({ id: 'database', label: 'Database & System', icon: 'fa-solid fa-sliders' });
                     }
                     return menu;
@@ -5419,6 +5429,11 @@
                 const isSuperAdmin = computed(() => currentUser.value && (currentUser.value.jabatan === 'Direktur Utama' || currentUser.value.jabatan === 'Komisaris'));
                 const isAccountExecutive = computed(() => currentUser.value && currentUser.value.jabatan === 'Account Executive');
                 const isFinanceManager = computed(() => currentUser.value && currentUser.value.jabatan === 'Finance Manager');
+                // Menu "Database & System": Super Admin punya akses PENUH (Backup, Restore, Kosongkan Data).
+                // Finance Manager HANYA diberi akses terbatas ke fitur "Download Backup JSON" saja
+                // (tidak bisa Restore maupun Kosongkan Data System).
+                const canAccessDatabaseMenu = computed(() => isSuperAdmin.value || isFinanceManager.value);
+                const canRestoreOrClearDatabase = computed(() => isSuperAdmin.value);
                 // Purchasing: role KHUSUS yang HANYA diberi akses ke fitur "PO ke Vendor" (menerbitkan,
                 // mencetak ulang, dan menghapus PO ke Vendor dari PR yang sudah Disetujui) — persis
                 // seperti hak Finance Manager pada fitur ini, TANPA hak-hak Finance Manager lainnya
@@ -5458,10 +5473,13 @@
                 const isDirekturUtama = computed(() => currentUser.value && currentUser.value.jabatan === 'Direktur Utama');
 
                 // ================== FITUR "INVENTORY / DATA ASET PERUSAHAAN" ==================
-                // KHUSUS Finance Manager & Direktur (Direktur Utama) yang boleh mengakses menu ini
-                // untuk mendata, mengubah, dan menghapus aset perusahaan (elektronik, furniture,
-                // kendaraan, peralatan kantor, dsb).
-                const canAccessInventory = computed(() => isFinanceManager.value || isDirekturUtama.value);
+                // Finance Manager & Direktur (Direktur Utama): akses penuh (boleh mendata, mengubah,
+                // dan menghapus aset perusahaan - elektronik, furniture, kendaraan, peralatan kantor, dsb).
+                // General Affair & IT & Technical Support: hanya boleh MENGAKSES menu & MENAMBAH data
+                // (input) aset baru. TIDAK bisa mengubah (edit) maupun menghapus (delete) data yang sudah ada.
+                const canAccessInventory = computed(() => isFinanceManager.value || isDirekturUtama.value || isGeneralAffair.value || isITTechnicalSupport.value);
+                // Hak akses penuh (edit & hapus) Inventory: HANYA Finance Manager & Direktur Utama.
+                const canEditDeleteInventory = computed(() => isFinanceManager.value || isDirekturUtama.value);
 
                 // KLAIM INSENTIF OVERRIDE (Account Manager, Direktur Utama, IT & Technical Support, Finance Manager, Komisaris, General Affair)
                 // Rumus dasar: sekian % dari Total Insentif AE yang sudah Disetujui.
@@ -7397,19 +7415,30 @@
                     closeBelanjaPembelianModal();
                 };
 
-                // ================== INVENTORY / DATA ASET PERUSAHAAN — CRUD (KHUSUS canAccessInventory) ==================
+                // ================== INVENTORY / DATA ASET PERUSAHAAN — CRUD ==================
+                // Menambah (input) data baru: boleh oleh siapa saja yang canAccessInventory (Finance
+                // Manager, Direktur Utama, General Affair, IT & Technical Support).
+                // Mengubah (edit) & menghapus (delete) data yang sudah ada: HANYA canEditDeleteInventory
+                // (Finance Manager & Direktur Utama). General Affair & IT & Technical Support tidak bisa
+                // edit/delete meski tombolnya disembunyikan di tabel — validasi ulang di sini sebagai lapis kedua.
                 const saveInventoryAset = () => {
-                    if (!canAccessInventory.value) {
-                        alert('Hanya Finance Manager atau Direktur yang memiliki akses untuk mengelola Inventory Aset Perusahaan.');
+                    const f = invAsetForm.value;
+                    const isEditingExisting = !!f.id;
+                    if (isEditingExisting) {
+                        if (!canEditDeleteInventory.value) {
+                            alert('Hanya Finance Manager atau Direktur yang memiliki akses untuk mengubah data Inventory Aset Perusahaan.');
+                            return;
+                        }
+                    } else if (!canAccessInventory.value) {
+                        alert('Anda tidak memiliki akses untuk menambah data Inventory Aset Perusahaan.');
                         return;
                     }
-                    const f = invAsetForm.value;
                     if (!f.namaAset || f.namaAset.trim() === '') {
                         alert('Nama aset wajib diisi.');
                         return;
                     }
                     if (!Array.isArray(db.value.inventoryAset)) db.value.inventoryAset = [];
-                    if (f.id) {
+                    if (isEditingExisting) {
                         const idx = db.value.inventoryAset.findIndex(a => a.id === f.id);
                         if (idx !== -1) {
                             db.value.inventoryAset[idx] = {
@@ -7432,13 +7461,13 @@
                 };
 
                 const editInventoryAset = (a) => {
-                    if (!canAccessInventory.value) return;
+                    if (!canEditDeleteInventory.value) return;
                     invAsetForm.value = { ...a };
                     openModal('addInventoryAset');
                 };
 
                 const deleteInventoryAset = (id) => {
-                    if (!canAccessInventory.value) {
+                    if (!canEditDeleteInventory.value) {
                         alert('Hanya Finance Manager atau Direktur yang memiliki akses untuk menghapus data aset.');
                         return;
                     }
@@ -9354,15 +9383,47 @@
                 };
 
                 // DATABASE MANAGEMENT (BACKUP, RESTORE, CLEAR)
-                const downloadBackup = () => {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db.value, null, 2));
+                const downloadBackup = async () => {
+                    const fileName = `Backup_PT_MBS_ERP_${new Date().toISOString().slice(0,10)}.json`;
+                    const jsonStr = JSON.stringify(db.value, null, 2);
+
+                    // Jika browser mendukung File System Access API, tampilkan dialog
+                    // pilih folder/lokasi penyimpanan (Chrome, Edge, Opera versi terbaru).
+                    if (window.showSaveFilePicker) {
+                        try {
+                            const handle = await window.showSaveFilePicker({
+                                suggestedName: fileName,
+                                types: [{
+                                    description: 'JSON Backup File',
+                                    accept: { 'application/json': ['.json'] }
+                                }]
+                            });
+                            const writable = await handle.createWritable();
+                            await writable.write(jsonStr);
+                            await writable.close();
+                            return;
+                        } catch (err) {
+                            // Pengguna membatalkan dialog pemilihan folder -> jangan lakukan apa-apa
+                            if (err && err.name === 'AbortError') return;
+                            console.error('Gagal menyimpan via File System Access API, fallback ke unduhan biasa:', err);
+                            // lanjut ke fallback di bawah
+                        }
+                    }
+
+                    // Fallback untuk browser yang tidak mendukung showSaveFilePicker
+                    // (Firefox, Safari, dsb). File akan masuk ke folder Download default browser.
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonStr);
                     const dlAnchorElem = document.createElement('a');
                     dlAnchorElem.setAttribute("href", dataStr);
-                    dlAnchorElem.setAttribute("download", `Backup_PT_MBS_ERP_${new Date().toISOString().slice(0,10)}.json`);
+                    dlAnchorElem.setAttribute("download", fileName);
                     dlAnchorElem.click();
                 };
 
                 const handleRestore = (e) => {
+                    if (!canRestoreOrClearDatabase.value) {
+                        alert('Anda tidak memiliki akses untuk melakukan Restore Data.');
+                        return;
+                    }
                     const file = e.target.files[0];
                     if (!file) return;
                     const reader = new FileReader();
@@ -9380,6 +9441,10 @@
                 };
 
                 const confirmClearDatabase = async () => {
+                    if (!canRestoreOrClearDatabase.value) {
+                        alert('Anda tidak memiliki akses untuk mengosongkan Database.');
+                        return;
+                    }
                     if (confirm('PERINGATAN! Seluruh data akan dikosongkan. Apakah Anda yakin?')) {
                         db.value = {
                             pegawai: [],
@@ -10329,6 +10394,8 @@
                     isSuperAdmin,
                     isAccountExecutive,
                     isFinanceManager,
+                    canAccessDatabaseMenu,
+                    canRestoreOrClearDatabase,
                     isPurchasing,
                     isManagerOrDirector,
                     canManageMasterCVB,
@@ -10523,6 +10590,7 @@
                     isDirekturUtama,
                     // FITUR INVENTORY / DATA ASET PERUSAHAAN
                     canAccessInventory,
+                    canEditDeleteInventory,
                     invAsetForm,
                     filterInventory,
                     masterInventoryAset,
