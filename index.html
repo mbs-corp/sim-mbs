@@ -4624,8 +4624,8 @@
                 <p v-if="currentUser.jabatan === 'Account Manager'" class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3 flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-info"></i> Khusus Account Manager: insentif dari AE Acep Sonjaya tidak termasuk dalam basis perhitungan ini.
                 </p>
-                <p v-if="['Direktur Utama','IT & Technical Support','Finance Manager'].includes(currentUser.jabatan)" class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3 flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-info"></i> Untuk AE selain Acep Sonjaya, basis perhitungan diambil dari Insentif Override Account Manager (AM), bukan langsung dari Total Insentif AE. Khusus porsi insentif AE Acep Sonjaya, perhitungan tetap seperti semula (langsung dari Total Insentif AE).
+                <p v-if="['Direktur Utama','IT & Technical Support','Finance Manager','Komisaris'].includes(currentUser.jabatan)" class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> Untuk AE selain Acep Sonjaya, basis perhitungan diambil dari Insentif Override Account Manager (AM), bukan langsung dari Total Insentif AE<span v-if="currentUser.jabatan === 'Komisaris'"> (dengan rate Komisaris 100%, artinya nominal Insentif Override Komisaris untuk porsi ini = Insentif Override Account Manager)</span>. Khusus porsi insentif AE Acep Sonjaya, perhitungan tetap seperti semula (langsung dari Total Insentif AE).
                 </p>
                 <p v-if="currentUser.jabatan === 'General Affair'" class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3 flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-info"></i> Khusus General Affair: basis perhitungan BUKAN dari Total Insentif AE, melainkan 10% dari Total Insentif IT & Technical Support yang sudah Disetujui.
@@ -4635,7 +4635,7 @@
                         <div class="flex justify-between"><span class="text-slate-500">Rate Insentif</span><span class="font-bold">{{ overrideRateForCurrentUser }}%</span></div>
                         <div class="flex justify-between"><span class="text-slate-500">Basis (Sisa)</span><span class="font-bold">{{ formatRupiah(overrideBaseTersedia) }}</span></div>
                         <div v-if="currentUser.jabatan === 'Account Manager'" class="flex justify-between text-amber-600"><span>Insentif Acep Sonjaya (dikecualikan)</span><span class="font-bold">{{ formatRupiah(totalInsentifAEDikecualikanUntukAM) }}</span></div>
-                        <template v-if="['Direktur Utama','IT & Technical Support','Finance Manager'].includes(currentUser.jabatan)">
+                        <template v-if="['Direktur Utama','IT & Technical Support','Finance Manager','Komisaris'].includes(currentUser.jabatan)">
                             <div class="flex justify-between text-slate-500"><span>&nbsp;&nbsp;dari Insentif Override AM (non-Acep)</span><span class="font-semibold">{{ formatRupiah(insentifOverrideAMNonAcep) }}</span></div>
                             <div class="flex justify-between text-slate-500"><span>&nbsp;&nbsp;dari Insentif AE Acep Sonjaya (langsung)</span><span class="font-semibold">{{ formatRupiah(totalInsentifAEDikecualikanUntukAM) }}</span></div>
                         </template>
@@ -9253,19 +9253,21 @@
                         .reduce((sum, k) => sum + Number(k.baseInsentifAE || 0), 0);
                 };
 
-                // ATURAN KHUSUS RATE OVERRIDE DIREKTUR UTAMA / IT & TECHNICAL SUPPORT / FINANCE MANAGER:
-                // Apabila AE BUKAN Acep Sonjaya, maka basis perhitungan insentif override untuk ketiga
+                // ATURAN KHUSUS RATE OVERRIDE DIREKTUR UTAMA / IT & TECHNICAL SUPPORT / FINANCE MANAGER / KOMISARIS:
+                // Apabila AE BUKAN Acep Sonjaya, maka basis perhitungan insentif override untuk keempat
                 // jabatan ini BUKAN lagi langsung dari Total Insentif AE, melainkan dari "Insentif
                 // Override Account Manager (AM)" atas AE-AE non-Acep Sonjaya tersebut (yaitu rate AM
                 // 20% dikalikan Total Insentif AE non-Acep Sonjaya). Jadi:
                 //   Insentif Override Direktur Utama = 15% x Insentif Override AM (non-Acep Sonjaya)
                 //   Insentif Override IT & Technical Support = 10% x Insentif Override AM (non-Acep Sonjaya)
                 //   Insentif Override Finance Manager = 5% x Insentif Override AM (non-Acep Sonjaya)
-                // Sedangkan untuk porsi insentif yang berasal dari AE Acep Sonjaya, perhitungan ketiga
+                //   Insentif Override Komisaris = 100% x Insentif Override AM (non-Acep Sonjaya), yang
+                //   secara nominal berarti Insentif Override Komisaris = Insentif Override Account Manager
+                //   untuk porsi AE non-Acep Sonjaya tersebut.
+                // Sedangkan untuk porsi insentif yang berasal dari AE Acep Sonjaya, perhitungan keempat
                 // jabatan ini TIDAK berubah (tetap rate langsung dari Total Insentif AE Acep Sonjaya),
                 // karena Account Manager sendiri tidak mendapat hak override dari AE Acep Sonjaya.
-                // Komisaris: tetap tidak ada perubahan perhitungan (tetap dari Total Insentif AE seutuhnya).
-                const JABATAN_OVERRIDE_MENGIKUTI_INSENTIF_AM = ['Direktur Utama', 'IT & Technical Support', 'Finance Manager'];
+                const JABATAN_OVERRIDE_MENGIKUTI_INSENTIF_AM = ['Direktur Utama', 'IT & Technical Support', 'Finance Manager', 'Komisaris'];
                 // "Insentif Override AM" atas AE non-Acep Sonjaya: rate Account Manager (20%) dikalikan
                 // Total Insentif AE non-Acep Sonjaya yang sudah Disetujui.
                 const insentifOverrideAMNonAcep = computed(() => {
@@ -9290,10 +9292,12 @@
 
                 // Sisa basis yang masih bisa diklaim oleh jabatan user yang sedang login.
                 // - Account Manager: memakai totalInsentifAEDisetujuiUntukAM (mengecualikan AE Acep Sonjaya)
-                // - Direktur Utama / IT & Technical Support / Finance Manager: memakai basis gabungan baru
-                //   di atas (mengikuti Insentif Override AM untuk AE non-Acep Sonjaya)
+                // - Direktur Utama / IT & Technical Support / Finance Manager / Komisaris: memakai basis
+                //   gabungan baru di atas (mengikuti Insentif Override AM untuk AE non-Acep Sonjaya;
+                //   khusus Komisaris rate-nya tetap 100% sehingga nominalnya = Insentif Override AM
+                //   untuk porsi AE non-Acep Sonjaya tersebut)
                 // - General Affair: memakai Total Insentif IT & Technical Support yang sudah Disetujui
-                // - Komisaris & lainnya: tetap memakai totalInsentifAEDisetujui seperti semula (tidak berubah)
+                // - Jabatan lainnya: tetap memakai totalInsentifAEDisetujui seperti semula (tidak berubah)
                 const overrideBaseTersedia = computed(() => {
                     if (!isOverrideRole.value) return 0;
                     const jab = currentUser.value.jabatan;
