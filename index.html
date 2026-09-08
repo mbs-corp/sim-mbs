@@ -1729,6 +1729,87 @@
                         </div>
                     </div>
 
+                    <!-- TAB: PRECALS (KALKULATOR ESTIMASI PROJECT SEBELUM JADI PR) - KHUSUS AE & ATASANNYA -->
+                    <div v-if="activeTab === 'preCals' && canAccessSalesModules" class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg">PreCals - Kalkulator Estimasi Project</h3>
+                                <p class="text-xs text-slate-500">Simulasi perhitungan Opsi Swasta, Pemerintah, Non-PPN, Profit & estimasi Insentif Sales AE SEBELUM project diajukan resmi sebagai Purchase Request (PR).</p>
+                            </div>
+                            <button v-if="isAccountExecutive" @click="openModal('addPreCals')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition flex items-center gap-2">
+                                <i class="fa-solid fa-calculator"></i> Tambah PreCals Baru
+                            </button>
+                        </div>
+
+                        <div class="p-3.5 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-2xl text-xs flex items-center gap-3">
+                            <i class="fa-solid fa-circle-info text-base"></i>
+                            <span>PreCals HANYA kalkulator pribadi AE: tidak melalui approval, tidak memicu PO/Invoice/DO, dan input barang/vendor manual tidak mengubah Master Data. Jika project sudah fix, klik <strong>"Jadikan PR"</strong> pada salah satu riwayat di bawah untuk memindahkan datanya ke form Purchase Request resmi.</span>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3">Riwayat PreCals {{ isAccountExecutive ? 'Saya' : 'Seluruh AE' }}</h4>
+                            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-100 text-slate-500 uppercase text-[10px] font-bold">
+                                            <th class="py-3 px-4">No PreCals & AE</th>
+                                            <th class="py-3 px-4">Customer / Project</th>
+                                            <th class="py-3 px-4">Barang</th>
+                                            <th class="py-3 px-4">Opsi</th>
+                                            <th class="py-3 px-4 text-right">Grand Total</th>
+                                            <th class="py-3 px-4 text-right">Profit</th>
+                                            <th class="py-3 px-4 text-right">Est. Insentif</th>
+                                            <th class="py-3 px-4 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="pc in filteredPreCalsList" :key="pc.id" class="hover:bg-slate-50/80">
+                                            <td class="py-3 px-4">
+                                                <div class="font-bold text-indigo-600 font-mono">{{ pc.noPreCals }}</div>
+                                                <div class="text-xs text-slate-500">{{ pc.namaAE }} ({{ pc.nipAE }})</div>
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                <div class="font-bold text-slate-800">{{ pc.namaCustomer || '-' }}</div>
+                                                <div class="text-xs text-slate-500">{{ pc.namaProject }}</div>
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-semibold">
+                                                    {{ (pc.items || []).length }} Jenis Barang
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-bold border border-blue-200">
+                                                    {{ pc.kategoriOption }}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 text-right font-bold text-slate-800">{{ formatRupiah(pc.grandTotalInvoice) }}</td>
+                                            <td class="py-3 px-4 text-right">
+                                                <div class="font-bold text-emerald-600">{{ formatRupiah(pc.profitBersih) }}</div>
+                                                <span class="text-[10px] text-emerald-600 font-semibold">{{ pc.profitPercent.toFixed(2) }}%</span>
+                                            </td>
+                                            <td class="py-3 px-4 text-right">
+                                                <div class="font-bold text-amber-600">{{ formatRupiah(pc.nominalInsentif) }}</div>
+                                                <span class="text-[10px] text-slate-400 font-semibold">Rate: {{ pc.insentifRatePercent }}%</span>
+                                            </td>
+                                            <td class="py-3 px-4 text-center">
+                                                <div v-if="isAccountExecutive && pc.nipAE === currentUser.nip" class="flex justify-center gap-1 mb-1">
+                                                    <button @click="editPreCals(pc)" class="text-blue-600 p-1 hover:bg-blue-50 rounded" title="Edit PreCals"><i class="fa-solid fa-pen"></i></button>
+                                                    <button @click="deletePreCals(pc.id)" class="text-rose-600 p-1 hover:bg-rose-50 rounded" title="Hapus PreCals"><i class="fa-solid fa-trash"></i></button>
+                                                </div>
+                                                <button v-if="isAccountExecutive && pc.nipAE === currentUser.nip" @click="convertPreCalsToPR(pc)" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded font-semibold flex items-center justify-center gap-1 w-full">
+                                                    <i class="fa-solid fa-file-invoice-dollar"></i> Jadikan PR
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="filteredPreCalsList.length === 0">
+                                            <td colspan="8" class="text-center py-8 text-slate-400 text-xs">Belum ada PreCals tersimpan. Klik "Tambah PreCals Baru" untuk mulai menghitung estimasi project.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- TAB 7: PURCHASE REQUEST (PR) & INSENTIF SALES AE (HANYA ACCOUNT EXECUTIVE & ATASANNYA) -->
                     <div v-if="activeTab === 'pr' && (canAccessSalesModules || canAccessPOVendor)" class="space-y-6">
                         <div class="flex justify-between items-center">
@@ -3868,6 +3949,272 @@
             </div>
         </div>
 
+        <!-- MODAL: ADD / EDIT PRECALS (KALKULATOR ESTIMASI PROJECT SEBELUM JADI PR) -->
+        <div v-if="modals.addPreCals" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">
+                            {{ preCalsForm.id ? 'Edit PreCals' : 'Buat PreCals Baru' }}
+                        </h3>
+                        <p class="text-xs text-slate-500">AE: {{ preCalsForm.id ? preCalsForm.namaAE : currentUser.nama }} (NIP: {{ preCalsForm.id ? preCalsForm.nipAE : currentUser.nip }})</p>
+                    </div>
+                    <span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-mono text-xs font-bold rounded-lg border border-indigo-200">
+                        {{ preCalsForm.noPreCals || 'Auto-Generate PreCals' }}
+                    </span>
+                </div>
+
+                <div class="mb-4 p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-xl text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>PreCals hanya kalkulator pribadi, tidak melalui approval apapun. Nama Customer & Project boleh masih perkiraan/belum final.</span>
+                </div>
+
+                <form @submit.prevent="savePreCals" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Opsi Perhitungan</label>
+                            <select v-model="preCalsForm.kategoriOption" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-indigo-50/50 font-semibold">
+                                <option value="Swasta">Swasta</option>
+                                <option value="Pemerintah">Pemerintah</option>
+                                <option value="Non PPN">Non PPN</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Customer (Opsional)</label>
+                            <input type="text" v-model="preCalsForm.namaCustomer" placeholder="Boleh dikosongkan jika belum ada" class="w-full px-3 py-2 border rounded-xl text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Project</label>
+                            <input type="text" v-model="preCalsForm.namaProject" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none">
+                        </div>
+                    </div>
+
+                    <!-- BARANG SELECTION (ESTIMASI, TIDAK MENGUBAH MASTER DATA) -->
+                    <div class="p-4 bg-slate-50 border rounded-2xl space-y-3">
+                        <h4 class="font-bold text-xs text-slate-700 uppercase">Tambah Barang ke Estimasi Ini</h4>
+                        <p class="text-[11px] text-slate-500 -mt-2">Isi form di bawah lalu klik "Tambah ke Daftar Barang" untuk tiap barang. Data manual di sini TIDAK tersimpan ke Master Data.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Part Number</label>
+                                <div class="flex flex-wrap gap-3 mb-2">
+                                    <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="master" v-model="preCalsItemPartNumberMode" @change="preCalsItemForm.partNumber = ''; preCalsItemForm.namaBarang = ''; preCalsItemForm.deskripsi = ''"> Master Data Barang
+                                    </label>
+                                    <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="manual" v-model="preCalsItemPartNumberMode" @change="preCalsItemForm.partNumber = ''; preCalsItemForm.namaBarang = ''; preCalsItemForm.deskripsi = ''"> Input Manual / Estimasi
+                                    </label>
+                                </div>
+                                <select v-if="preCalsItemPartNumberMode === 'master'" v-model="preCalsItemForm.partNumber" @change="onPreCalsItemPartNumberChange" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white">
+                                    <option value="" disabled>-- Pilih Part Number Barang --</option>
+                                    <option v-for="b in masterBarang" :key="b.id" :value="b.partNumber">
+                                        {{ b.partNumber }} - {{ b.namaBarang }}
+                                    </option>
+                                </select>
+                                <input v-else type="text" v-model="preCalsItemForm.partNumber" placeholder="Ketik Part Number / kode estimasi" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Barang {{ preCalsItemPartNumberMode === 'master' ? '(Otomatis)' : '' }}</label>
+                                <input type="text" v-model="preCalsItemForm.namaBarang" :readonly="preCalsItemPartNumberMode === 'master'" :placeholder="preCalsItemPartNumberMode === 'manual' ? 'Ketik nama barang' : ''" :class="preCalsItemPartNumberMode === 'master' ? 'w-full px-3 py-2 border rounded-xl text-sm bg-slate-100 text-slate-600 font-medium' : 'w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-medium'">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Deskripsi / Spesifikasi {{ preCalsItemPartNumberMode === 'master' ? '(Otomatis)' : '' }}</label>
+                            <textarea v-model="preCalsItemForm.deskripsi" :readonly="preCalsItemPartNumberMode === 'master'" :placeholder="preCalsItemPartNumberMode === 'manual' ? 'Ketik deskripsi/spesifikasi barang' : ''" rows="2" :class="preCalsItemPartNumberMode === 'master' ? 'w-full px-3 py-2 border rounded-xl text-sm bg-slate-100 text-slate-600' : 'w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white'"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="md:col-span-1">
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Vendor (Opsional)</label>
+                                <div class="flex flex-wrap gap-3 mb-2">
+                                    <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="master" v-model="preCalsItemVendorMode" @change="preCalsItemForm.namaVendor = ''"> Master Data Vendor
+                                    </label>
+                                    <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="manual" v-model="preCalsItemVendorMode" @change="preCalsItemForm.namaVendor = ''"> Input Manual
+                                    </label>
+                                </div>
+                                <select v-if="preCalsItemVendorMode === 'master'" v-model="preCalsItemForm.namaVendor" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white">
+                                    <option value="">-- Belum Ditentukan --</option>
+                                    <option v-for="v in masterVendor" :key="v.id" :value="v.namaVendor">{{ v.namaVendor }}</option>
+                                </select>
+                                <input v-else type="text" v-model="preCalsItemForm.namaVendor" placeholder="Ketik nama vendor (opsional)" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Quantity</label>
+                                <input type="number" v-model.number="preCalsItemForm.qty" min="1" step="1" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Harga Beli Satuan (Rp)</label>
+                                <input type="number" v-model.number="preCalsItemForm.hargaBeli" min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-semibold">
+                                <div class="flex flex-wrap gap-2.5 mt-1.5">
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Include PPN" v-model="preCalsItemHargaBeliStatus"> Include PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Exclude PPN" v-model="preCalsItemHargaBeliStatus"> Exclude PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Non PPN" v-model="preCalsItemHargaBeliStatus"> Non PPN
+                                    </label>
+                                </div>
+                                <p v-if="preCalsItemHargaBeliStatus === 'Include PPN'" class="text-[10px] text-indigo-600 mt-1">Angka di atas akan dibagi 1,11 (PPN dikeluarkan) saat ditambahkan ke daftar barang.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Harga Jual Satuan (Rp)</label>
+                                <input type="number" v-model.number="preCalsItemForm.hargaJual" min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-semibold">
+                                <div class="flex flex-wrap gap-2.5 mt-1.5">
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Include PPN" v-model="preCalsItemHargaJualStatus"> Include PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Exclude PPN" v-model="preCalsItemHargaJualStatus"> Exclude PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Non PPN" v-model="preCalsItemHargaJualStatus"> Non PPN
+                                    </label>
+                                </div>
+                                <p v-if="preCalsItemHargaJualStatus === 'Include PPN'" class="text-[10px] text-indigo-600 mt-1">Angka di atas akan dibagi 1,11 (PPN dikeluarkan) saat ditambahkan ke daftar barang.</p>
+                            </div>
+                        </div>
+                        <div v-if="preCalsItemEditIndex !== null" class="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-pen"></i>
+                            <span>Sedang mengedit barang #{{ preCalsItemEditIndex + 1 }}. Ubah data di atas lalu klik "Update Barang", atau batalkan.</span>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button v-if="preCalsItemEditIndex !== null" type="button" @click="cancelEditPreCalsItem" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl text-xs font-semibold transition">
+                                Batal Edit Barang
+                            </button>
+                            <button type="button" @click="addPreCalsItem" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow transition flex items-center gap-2">
+                                <i :class="preCalsItemEditIndex !== null ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-circle-plus'"></i>
+                                {{ preCalsItemEditIndex !== null ? 'Update Barang' : 'Tambah ke Daftar Barang' }}
+                            </button>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-200">
+                            <h4 class="font-bold text-xs text-slate-700 uppercase mb-2">Daftar Barang Estimasi Ini ({{ preCalsForm.items.length }} Jenis Barang)</h4>
+                            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-100 text-slate-500 uppercase text-[10px] font-bold">
+                                            <th class="py-2 px-3">Part Number</th>
+                                            <th class="py-2 px-3">Nama Barang</th>
+                                            <th class="py-2 px-3">Vendor</th>
+                                            <th class="py-2 px-3 text-right">Qty</th>
+                                            <th class="py-2 px-3 text-right">Harga Beli Satuan</th>
+                                            <th class="py-2 px-3 text-right">Harga Jual Satuan</th>
+                                            <th class="py-2 px-3 text-right">Sub Total Jual</th>
+                                            <th class="py-2 px-3 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(it, idx) in preCalsForm.items" :key="idx" :class="preCalsItemEditIndex === idx ? 'bg-amber-50' : 'hover:bg-slate-50'">
+                                            <td class="py-2 px-3 font-mono font-bold text-indigo-600">{{ it.partNumber }}</td>
+                                            <td class="py-2 px-3 font-medium">{{ it.namaBarang }}</td>
+                                            <td class="py-2 px-3">{{ it.namaVendor || '-' }}</td>
+                                            <td class="py-2 px-3 text-right font-semibold">{{ it.qty }}</td>
+                                            <td class="py-2 px-3 text-right">{{ formatRupiah(it.hargaBeli) }}</td>
+                                            <td class="py-2 px-3 text-right">{{ formatRupiah(it.hargaJual) }}</td>
+                                            <td class="py-2 px-3 text-right font-bold">{{ formatRupiah(it.hargaJual * it.qty) }}</td>
+                                            <td class="py-2 px-3 text-center">
+                                                <div class="flex justify-center gap-1">
+                                                    <button type="button" @click="editPreCalsItem(idx)" class="text-blue-600 p-1 hover:bg-blue-50 rounded">
+                                                        <i class="fa-solid fa-pen"></i>
+                                                    </button>
+                                                    <button type="button" @click="removePreCalsItem(idx)" class="text-rose-600 p-1 hover:bg-rose-50 rounded">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="preCalsForm.items.length === 0">
+                                            <td colspan="8" class="text-center py-4 text-slate-400 text-[11px]">Belum ada barang ditambahkan. Isi form di atas lalu klik "Tambah ke Daftar Barang".</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BIAYA-BIAYA INPUT MANUAL -->
+                    <div class="p-4 bg-slate-50 border rounded-2xl space-y-3">
+                        <h4 class="font-bold text-xs text-slate-700 uppercase">Rincian Biaya-Biaya Operational (Input Manual / Estimasi)</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">Ekspedisi (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaEkspedisi" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">Add Insentif (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaAddInsentif" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">Bank Fee (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaBankFee" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">Instalasi / Setting (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaInstalasi" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">PPH (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaPph" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600">Other / Lain-lain (Rp)</label>
+                                <input type="number" v-model.number="preCalsForm.biayaOther" min="0" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600">Catatan (Opsional)</label>
+                            <textarea v-model="preCalsForm.catatan" rows="2" placeholder="Catatan tambahan untuk estimasi ini" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none bg-white"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- LIVE CALCULATED RESULTS SUMMARY -->
+                    <div class="p-4 bg-indigo-900 text-white rounded-2xl space-y-3">
+                        <h4 class="font-bold text-xs text-indigo-300 uppercase border-b border-indigo-800 pb-2">Hasil Perhitungan Otomatis Sistem (Formula: {{ preCalsForm.kategoriOption }})</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            <div>
+                                <span class="text-slate-300 block">Total Biaya:</span>
+                                <span class="font-bold text-sm">{{ formatRupiah(calculatedPreCals.totalBiaya) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block">Sub Total Invoice:</span>
+                                <span class="font-bold text-sm">{{ formatRupiah(calculatedPreCals.subTotalInvoice) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block">PPN (11%):</span>
+                                <span class="font-bold text-sm">{{ formatRupiah(calculatedPreCals.ppn) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-300 block">Grand Total:</span>
+                                <span class="font-bold text-sm text-indigo-200">{{ formatRupiah(calculatedPreCals.grandTotalInvoice) }}</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-indigo-800/80 flex flex-wrap justify-between items-center text-xs">
+                            <div>
+                                <span class="text-slate-300">Profit Bersih: </span>
+                                <strong class="text-emerald-300 text-sm ml-1">{{ formatRupiah(calculatedPreCals.profitBersih) }}</strong>
+                                <span class="ml-2 px-2 py-0.5 bg-emerald-900 text-emerald-200 rounded font-bold text-[11px]">
+                                    {{ calculatedPreCals.profitPercent.toFixed(2) }}%
+                                </span>
+                            </div>
+                            <div class="bg-emerald-800/60 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                                <span>Estimasi Insentif AE ({{ calculatedPreCals.insentifRatePercent }}%): </span>
+                                <strong class="text-amber-300 text-sm ml-1">{{ formatRupiah(calculatedPreCals.nominalInsentif) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" @click="closeModal('addPreCals')" class="px-4 py-2 border text-slate-600 rounded-xl text-xs font-semibold">Batal</button>
+                        <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan PreCals
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- MODAL: ADD / EDIT PURCHASE REQUEST (PR) -->
         <div v-if="modals.addPR" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -3993,10 +4340,34 @@
                                     </span>
                                 </label>
                                 <input type="number" v-model.number="prItemForm.hargaBeli" min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-semibold">
+                                <div class="flex flex-wrap gap-2.5 mt-1.5">
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Include PPN" v-model="prItemHargaBeliStatus"> Include PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Exclude PPN" v-model="prItemHargaBeliStatus"> Exclude PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Non PPN" v-model="prItemHargaBeliStatus"> Non PPN
+                                    </label>
+                                </div>
+                                <p v-if="prItemHargaBeliStatus === 'Include PPN'" class="text-[10px] text-blue-600 mt-1">Angka di atas akan dibagi 1,11 (PPN dikeluarkan) saat ditambahkan ke daftar barang.</p>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Harga Jual Satuan (Rp)</label>
                                 <input type="number" v-model.number="prItemForm.hargaJual" min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white font-semibold">
+                                <div class="flex flex-wrap gap-2.5 mt-1.5">
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Include PPN" v-model="prItemHargaJualStatus"> Include PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Exclude PPN" v-model="prItemHargaJualStatus"> Exclude PPN
+                                    </label>
+                                    <label class="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input type="radio" value="Non PPN" v-model="prItemHargaJualStatus"> Non PPN
+                                    </label>
+                                </div>
+                                <p v-if="prItemHargaJualStatus === 'Include PPN'" class="text-[10px] text-blue-600 mt-1">Angka di atas akan dibagi 1,11 (PPN dikeluarkan) saat ditambahkan ke daftar barang.</p>
                             </div>
                         </div>
                         <div v-if="prItemEditIndex !== null" class="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
@@ -4727,6 +5098,10 @@
                     lookbook: [],
                     reimbursement: [],
                     purchaseRequests: [],
+                    // Riwayat PreCals (kalkulator estimasi project) milik AE - HANYA untuk
+                    // simulasi/perhitungan sebelum project ini benar-benar diajukan sebagai
+                    // Purchase Request (PR) resmi. Tidak melalui alur approval apapun.
+                    preCalcs: [],
                     // Riwayat Purchase Order (PO) ke Vendor yang diterbitkan dari suatu PR
                     // (hanya bisa dibuat oleh Finance Manager, lihat fitur "PO ke Vendor").
                     poVendor: [],
@@ -4837,6 +5212,7 @@
                     addLookbook: false,
                     addReimbursement: false,
                     addPR: false,
+                    addPreCals: false,
                     addKlaimInsentif: false,
                     addKlaimInsentifOverride: false,
                     editPipelineTarget: false,
@@ -5002,6 +5378,12 @@
                 // 'master' = pilih dari Master Data Vendor yang sudah ada
                 // 'manual' = ketik sendiri nama vendor baru, otomatis tersimpan ke Master Data Vendor
                 const prItemVendorMode = ref('master');
+                // Status PPN untuk Harga Beli/Jual Satuan yang sedang diinput pada form "Tambah Barang":
+                // 'Include PPN' = angka yang diketik SUDAH termasuk PPN 11%, sehingga saat ditambahkan
+                //                 ke daftar barang otomatis dibagi 1,11 agar tersimpan sebagai harga ex-PPN.
+                // 'Exclude PPN' / 'Non PPN' = angka yang diketik dipakai apa adanya tanpa perhitungan apapun.
+                const prItemHargaBeliStatus = ref('Exclude PPN');
+                const prItemHargaJualStatus = ref('Exclude PPN');
 
                 // PURCHASE REQUEST FORM (SUPPORT MULTI BARANG PER PROJECT)
                 const prForm = ref({
@@ -5031,6 +5413,44 @@
                 });
                 // null = mode tambah barang baru; angka = index barang di prForm.items yang sedang diedit
                 const prItemEditIndex = ref(null);
+
+                // ================== PRECALS (KALKULATOR ESTIMASI PROJECT SEBELUM JADI PR) ==================
+                // PreCals memakai formula perhitungan yang SAMA PERSIS dengan Purchase Request (PR),
+                // namun HANYA berfungsi sebagai kalkulator/simulasi pribadi milik AE (tidak melalui
+                // approval, tidak memicu PO/Invoice/DO, dan input barang/vendor manual TIDAK otomatis
+                // tersimpan ke Master Data). Setelah project fix, AE tinggal klik "Jadikan Purchase
+                // Request" untuk memindahkan seluruh data PreCals ini ke form PR yang sesungguhnya.
+                const preCalsItemPartNumberMode = ref('master');
+                const preCalsItemVendorMode = ref('master');
+                // Sama seperti prItemHargaBeliStatus/prItemHargaJualStatus di atas, untuk form PreCals.
+                const preCalsItemHargaBeliStatus = ref('Exclude PPN');
+                const preCalsItemHargaJualStatus = ref('Exclude PPN');
+                const preCalsForm = ref({
+                    id: null,
+                    noPreCals: '',
+                    kategoriOption: 'Swasta',
+                    namaCustomer: '',
+                    namaProject: '',
+                    items: [],
+                    biayaEkspedisi: 0,
+                    biayaAddInsentif: 0,
+                    biayaBankFee: 0,
+                    biayaInstalasi: 0,
+                    biayaPph: 0,
+                    biayaOther: 0,
+                    catatan: ''
+                });
+                const preCalsItemForm = ref({
+                    partNumber: '',
+                    namaBarang: '',
+                    deskripsi: '',
+                    namaVendor: '',
+                    qty: 1,
+                    hargaBeli: 0,
+                    hargaJual: 0
+                });
+                // null = mode tambah barang baru; angka = index barang di preCalsForm.items yang sedang diedit
+                const preCalsItemEditIndex = ref(null);
 
                 const filterHRISStatus = ref('ALL');
                 const filterHRISNIP = ref('ALL');
@@ -5147,6 +5567,11 @@
                     // Pengajuan Pembelian Barang: terbuka untuk SEMUA pegawai (tanpa syarat role),
                     // lihat pengajuanPembelianList untuk aturan visibilitas datanya per role.
                     menu.push({ id: 'pengajuanPembelian', label: 'Pengajuan Pembelian Barang', icon: 'fa-solid fa-cart-shopping' });
+                    // PreCals: kalkulator estimasi project (khusus AE & atasannya) SEBELUM
+                    // project ini diajukan resmi sebagai Purchase Request (PR).
+                    if (canAccessSalesModules.value) {
+                        menu.push({ id: 'preCals', label: 'PreCals (Kalkulator Project)', icon: 'fa-solid fa-calculator' });
+                    }
                     if (canAccessSalesModules.value || canAccessPOVendor.value) {
                         menu.push({ id: 'pr', label: 'Purchase Request (PR)', icon: 'fa-solid fa-file-invoice-dollar' });
                     }
@@ -5251,6 +5676,9 @@
                     }
                     if (!Array.isArray(db.value.inventoryAset)) {
                         db.value.inventoryAset = [];
+                    }
+                    if (!Array.isArray(db.value.preCalcs)) {
+                        db.value.preCalcs = [];
                     }
                     if (!Array.isArray(db.value.jenisJabatanList) || db.value.jenisJabatanList.length === 0) {
                         // Daftar bawaan (kompatibel dengan data pegawai yang sudah ada sebelumnya).
@@ -5919,6 +6347,18 @@
                     if (isAccountExecutive.value) return list.filter(pr => pr.nipAE === currentUser.value.nip);
                     return list;
                 });
+                // PreCals: sama seperti Purchase Request, AE hanya melihat PreCals miliknya sendiri,
+                // sedangkan Manager/Direktur/Super Admin bisa melihat seluruh PreCals untuk monitoring.
+                const preCalsListAll = computed(() => {
+                    const list = db.value.preCalcs || [];
+                    if (!currentUser.value) return [];
+                    if (isSuperAdmin.value || isManagerOrDirector.value) return list;
+                    if (isAccountExecutive.value) return list.filter(pc => pc.nipAE === currentUser.value.nip);
+                    return list;
+                });
+                const filteredPreCalsList = computed(() => {
+                    return preCalsListAll.value.slice().sort((a, b) => (b.dibuatPada || '').localeCompare(a.dibuatPada || ''));
+                });
                 const spList = computed(() => db.value.spWarnings || []);
 
                 // Pengajuan Pembelian Barang: pegawai biasa hanya melihat pengajuannya sendiri.
@@ -6199,6 +6639,65 @@
                     const profitPercent = totalBiaya > 0 ? (profitBersih / totalBiaya) * 100 : 0;
 
                     // AE SALES INCENTIVE TIER CALCULATOR
+                    let insentifRatePercent = 0;
+                    if (profitPercent < 10) {
+                        insentifRatePercent = 6.25;
+                    } else if (profitPercent >= 10 && profitPercent <= 15) {
+                        insentifRatePercent = 10;
+                    } else if (profitPercent > 15 && profitPercent <= 20) {
+                        insentifRatePercent = 15;
+                    } else if (profitPercent > 20) {
+                        insentifRatePercent = 20;
+                    }
+
+                    const nominalInsentif = profitBersih * (insentifRatePercent / 100);
+
+                    return {
+                        totalBiaya,
+                        subTotalInvoice,
+                        ppn,
+                        grandTotalInvoice,
+                        profitBersih,
+                        profitPercent,
+                        insentifRatePercent,
+                        nominalInsentif
+                    };
+                });
+
+                // Formula PreCals SAMA PERSIS dengan formula PR di atas (calculatedPR), hanya sumber
+                // datanya diambil dari preCalsForm (bukan prForm) karena keduanya form yang terpisah.
+                const calculatedPreCals = computed(() => {
+                    const f = preCalsForm.value;
+                    const items = f.items || [];
+                    const totalHargaBeli = items.reduce((sum, it) => sum + (Number(it.hargaBeli || 0) * Number(it.qty || 0)), 0);
+                    const totalHargaJual = items.reduce((sum, it) => sum + (Number(it.hargaJual || 0) * Number(it.qty || 0)), 0);
+
+                    const ekspedisi = Number(f.biayaEkspedisi || 0);
+                    const addInsentif = Number(f.biayaAddInsentif || 0);
+                    const bankFee = Number(f.biayaBankFee || 0);
+                    const instalasi = Number(f.biayaInstalasi || 0);
+                    const pph = Number(f.biayaPph || 0);
+                    const other = Number(f.biayaOther || 0);
+
+                    const totalBiaya = ekspedisi + addInsentif + bankFee + instalasi + pph + other + totalHargaBeli;
+                    const subTotalInvoice = totalHargaJual;
+
+                    let ppn = 0;
+                    let grandTotalInvoice = 0;
+                    let profitBersih = 0;
+
+                    if (f.kategoriOption === 'Swasta' || f.kategoriOption === 'Pemerintah') {
+                        ppn = subTotalInvoice * 0.11;
+                        grandTotalInvoice = subTotalInvoice + ppn;
+                        profitBersih = subTotalInvoice - totalBiaya;
+                    } else if (f.kategoriOption === 'Non PPN') {
+                        ppn = 0;
+                        grandTotalInvoice = subTotalInvoice + ppn;
+                        profitBersih = grandTotalInvoice - totalBiaya;
+                    }
+
+                    const profitPercent = totalBiaya > 0 ? (profitBersih / totalBiaya) * 100 : 0;
+
                     let insentifRatePercent = 0;
                     if (profitPercent < 10) {
                         insentifRatePercent = 6.25;
@@ -7559,14 +8058,25 @@
                         }
                     }
 
+                    // KONVERSI PPN: jika status harga beli/jual diset "Include PPN", angka yang diketik
+                    // dianggap SUDAH termasuk PPN 11% sehingga dibagi 1,11 agar tersimpan sebagai harga
+                    // ex-PPN (konsisten dengan konvensi hargaExPPN di Master Data Barang). Untuk status
+                    // "Exclude PPN" / "Non PPN", angka dipakai apa adanya tanpa perhitungan apapun.
+                    const hargaBeliFinal = prItemHargaBeliStatus.value === 'Include PPN'
+                        ? Math.round(Number(it.hargaBeli || 0) / 1.11)
+                        : Number(it.hargaBeli || 0);
+                    const hargaJualFinal = prItemHargaJualStatus.value === 'Include PPN'
+                        ? Math.round(Number(it.hargaJual || 0) / 1.11)
+                        : Number(it.hargaJual || 0);
+
                     const payload = {
                         partNumber: partNumberTrim,
                         namaBarang: it.namaBarang,
                         deskripsi: it.deskripsi,
                         namaVendor: namaVendorTrim,
                         qty: Number(it.qty),
-                        hargaBeli: Number(it.hargaBeli || 0),
-                        hargaJual: Number(it.hargaJual || 0)
+                        hargaBeli: hargaBeliFinal,
+                        hargaJual: hargaJualFinal
                     };
                     if (prItemEditIndex.value !== null) {
                         // MODE EDIT: update barang yang sudah ada di daftar, bukan menambah baru
@@ -7579,6 +8089,8 @@
                     prItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
                     prItemPartNumberMode.value = 'master';
                     prItemVendorMode.value = 'master';
+                    prItemHargaBeliStatus.value = 'Exclude PPN';
+                    prItemHargaJualStatus.value = 'Exclude PPN';
                 };
 
                 // MEMUAT DATA BARANG YANG DIPILIH KE FORM UNTUK DIEDIT
@@ -7592,6 +8104,10 @@
                     // Sama halnya untuk Vendor barang ini.
                     const adaVendorDiMaster = masterVendor.value.some(v => v.namaVendor === prItemForm.value.namaVendor);
                     prItemVendorMode.value = adaVendorDiMaster ? 'master' : 'manual';
+                    // Harga yang tersimpan di daftar barang SUDAH dalam bentuk ex-PPN, jadi status
+                    // PPN direset ke "Exclude PPN" agar tidak dibagi 1,11 lagi saat disimpan ulang.
+                    prItemHargaBeliStatus.value = 'Exclude PPN';
+                    prItemHargaJualStatus.value = 'Exclude PPN';
                     prItemEditIndex.value = idx;
                 };
 
@@ -7599,6 +8115,8 @@
                     prItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
                     prItemPartNumberMode.value = 'master';
                     prItemVendorMode.value = 'master';
+                    prItemHargaBeliStatus.value = 'Exclude PPN';
+                    prItemHargaJualStatus.value = 'Exclude PPN';
                     prItemEditIndex.value = null;
                 };
 
@@ -7720,6 +8238,8 @@
                     prItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
                     prItemPartNumberMode.value = 'master';
                     prItemVendorMode.value = 'master';
+                    prItemHargaBeliStatus.value = 'Exclude PPN';
+                    prItemHargaJualStatus.value = 'Exclude PPN';
                     prItemEditIndex.value = null;
                     openModal('addPR');
                 };
@@ -7853,6 +8373,186 @@
                         db.value.purchaseRequests = db.value.purchaseRequests.filter(p => p.id !== id);
                         saveDatabase();
                     }
+                };
+
+                // ================== METHODS PRECALS (KALKULATOR PROJECT SEBELUM JADI PR) ==================
+                // Auto-isi harga beli satuan dari Master Data Barang saat Part Number dipilih (mode
+                // "master"), murni untuk membantu estimasi - TIDAK mengubah Master Data apapun.
+                const onPreCalsItemPartNumberChange = () => {
+                    const b = masterBarang.value.find(item => item.partNumber === preCalsItemForm.value.partNumber);
+                    if (b) {
+                        preCalsItemForm.value.namaBarang = b.namaBarang;
+                        preCalsItemForm.value.deskripsi = b.deskripsi;
+                        preCalsItemForm.value.hargaBeli = Number(b.hargaExPPN || 0);
+                    }
+                };
+
+                // TAMBAH ATAU UPDATE SATU BARANG (DENGAN QUANTITY) DI DALAM DAFTAR BARANG ESTIMASI INI.
+                // Catatan: berbeda dengan addPRItem, input manual di sini TIDAK otomatis membuat
+                // record baru di Master Data Barang/Vendor karena PreCals sifatnya baru estimasi.
+                const addPreCalsItem = () => {
+                    const it = preCalsItemForm.value;
+                    if (!it.partNumber || String(it.partNumber).trim() === '') {
+                        alert('Silakan pilih/isi Part Number atau nama barang terlebih dahulu.');
+                        return;
+                    }
+                    if (preCalsItemPartNumberMode.value === 'manual' && (!it.namaBarang || it.namaBarang.trim() === '')) {
+                        alert('Silakan isi Nama Barang untuk estimasi ini.');
+                        return;
+                    }
+                    if (!it.qty || Number(it.qty) < 1) {
+                        alert('Quantity barang minimal 1.');
+                        return;
+                    }
+                    const hargaBeliFinal = preCalsItemHargaBeliStatus.value === 'Include PPN'
+                        ? Math.round(Number(it.hargaBeli || 0) / 1.11)
+                        : Number(it.hargaBeli || 0);
+                    const hargaJualFinal = preCalsItemHargaJualStatus.value === 'Include PPN'
+                        ? Math.round(Number(it.hargaJual || 0) / 1.11)
+                        : Number(it.hargaJual || 0);
+
+                    const payload = {
+                        partNumber: String(it.partNumber).trim(),
+                        namaBarang: it.namaBarang,
+                        deskripsi: it.deskripsi,
+                        namaVendor: String(it.namaVendor || '').trim(),
+                        qty: Number(it.qty),
+                        hargaBeli: hargaBeliFinal,
+                        hargaJual: hargaJualFinal
+                    };
+                    if (preCalsItemEditIndex.value !== null) {
+                        preCalsForm.value.items[preCalsItemEditIndex.value] = payload;
+                        preCalsItemEditIndex.value = null;
+                    } else {
+                        preCalsForm.value.items.push(payload);
+                    }
+                    preCalsItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
+                    preCalsItemPartNumberMode.value = 'master';
+                    preCalsItemVendorMode.value = 'master';
+                    preCalsItemHargaBeliStatus.value = 'Exclude PPN';
+                    preCalsItemHargaJualStatus.value = 'Exclude PPN';
+                };
+
+                const editPreCalsItem = (idx) => {
+                    preCalsItemForm.value = { ...preCalsForm.value.items[idx] };
+                    const adaDiMaster = masterBarang.value.some(b => b.partNumber === preCalsItemForm.value.partNumber);
+                    preCalsItemPartNumberMode.value = adaDiMaster ? 'master' : 'manual';
+                    const adaVendorDiMaster = masterVendor.value.some(v => v.namaVendor === preCalsItemForm.value.namaVendor);
+                    preCalsItemVendorMode.value = adaVendorDiMaster ? 'master' : 'manual';
+                    // Harga di daftar sudah ex-PPN, reset status agar tidak dibagi 1,11 lagi.
+                    preCalsItemHargaBeliStatus.value = 'Exclude PPN';
+                    preCalsItemHargaJualStatus.value = 'Exclude PPN';
+                    preCalsItemEditIndex.value = idx;
+                };
+
+                const cancelEditPreCalsItem = () => {
+                    preCalsItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
+                    preCalsItemPartNumberMode.value = 'master';
+                    preCalsItemVendorMode.value = 'master';
+                    preCalsItemHargaBeliStatus.value = 'Exclude PPN';
+                    preCalsItemHargaJualStatus.value = 'Exclude PPN';
+                    preCalsItemEditIndex.value = null;
+                };
+
+                const removePreCalsItem = (idx) => {
+                    preCalsForm.value.items.splice(idx, 1);
+                    if (preCalsItemEditIndex.value === idx) {
+                        cancelEditPreCalsItem();
+                    } else if (preCalsItemEditIndex.value !== null && preCalsItemEditIndex.value > idx) {
+                        preCalsItemEditIndex.value -= 1;
+                    }
+                };
+
+                // SIMPAN HASIL KALKULATOR PRECALS INI (TANPA APPROVAL, TANPA PO/INVOICE/DO).
+                const savePreCals = () => {
+                    if (!preCalsForm.value.items || preCalsForm.value.items.length === 0) {
+                        alert('Silakan tambahkan minimal 1 barang ke daftar estimasi sebelum menyimpan PreCals.');
+                        return;
+                    }
+                    if (!preCalsForm.value.namaProject || preCalsForm.value.namaProject.trim() === '') {
+                        alert('Silakan isi Nama Project untuk estimasi ini.');
+                        return;
+                    }
+                    const calc = calculatedPreCals.value;
+                    const noPreCals = preCalsForm.value.noPreCals || ('PC-MBS-' + new Date().getFullYear() + '-' + String((db.value.preCalcs || []).length + 1).padStart(4, '0'));
+
+                    const record = {
+                        ...preCalsForm.value,
+                        items: preCalsForm.value.items.map(it => ({ ...it })),
+                        noPreCals,
+                        nipAE: preCalsForm.value.id ? preCalsForm.value.nipAE : currentUser.value.nip,
+                        namaAE: preCalsForm.value.id ? preCalsForm.value.namaAE : currentUser.value.nama,
+                        totalBiaya: calc.totalBiaya,
+                        subTotalInvoice: calc.subTotalInvoice,
+                        ppn: calc.ppn,
+                        grandTotalInvoice: calc.grandTotalInvoice,
+                        profitBersih: calc.profitBersih,
+                        profitPercent: calc.profitPercent,
+                        insentifRatePercent: calc.insentifRatePercent,
+                        nominalInsentif: calc.nominalInsentif,
+                        dibuatPada: preCalsForm.value.dibuatPada || new Date().toISOString()
+                    };
+
+                    if (!Array.isArray(db.value.preCalcs)) db.value.preCalcs = [];
+                    if (preCalsForm.value.id) {
+                        const idx = db.value.preCalcs.findIndex(p => p.id === preCalsForm.value.id);
+                        if (idx !== -1) db.value.preCalcs[idx] = record;
+                    } else {
+                        record.id = 'pc_' + Date.now();
+                        db.value.preCalcs.push(record);
+                    }
+
+                    saveDatabase();
+                    closeModal('addPreCals');
+                };
+
+                const editPreCals = (pc) => {
+                    preCalsForm.value = { ...pc, items: (pc.items || []).map(it => ({ ...it })) };
+                    preCalsItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
+                    preCalsItemPartNumberMode.value = 'master';
+                    preCalsItemVendorMode.value = 'master';
+                    preCalsItemHargaBeliStatus.value = 'Exclude PPN';
+                    preCalsItemHargaJualStatus.value = 'Exclude PPN';
+                    preCalsItemEditIndex.value = null;
+                    openModal('addPreCals');
+                };
+
+                const deletePreCals = (id) => {
+                    if (confirm('Hapus PreCals ini? Data estimasi ini tidak dapat dikembalikan.')) {
+                        db.value.preCalcs = (db.value.preCalcs || []).filter(p => p.id !== id);
+                        saveDatabase();
+                    }
+                };
+
+                // PINDAHKAN SELURUH DATA PRECALS INI KE FORM PURCHASE REQUEST (PR) YANG SESUNGGUHNYA.
+                // PreCals sumbernya TETAP ADA sebagai riwayat/referensi (tidak otomatis terhapus),
+                // dan project baru resmi tercatat sebagai PR setelah AE klik "Simpan Purchase Request".
+                const convertPreCalsToPR = (pc) => {
+                    if (!confirm('Jadikan PreCals ini sebagai Purchase Request (PR) baru? Anda tetap perlu melengkapi & menyimpan form PR yang akan terbuka.')) {
+                        return;
+                    }
+                    prForm.value = {
+                        id: null,
+                        noPR: '',
+                        kategoriOption: pc.kategoriOption,
+                        namaCustomer: pc.namaCustomer || '',
+                        namaProject: pc.namaProject,
+                        items: (pc.items || []).map(it => ({ ...it })),
+                        biayaEkspedisi: pc.biayaEkspedisi,
+                        biayaAddInsentif: pc.biayaAddInsentif,
+                        biayaBankFee: pc.biayaBankFee,
+                        biayaInstalasi: pc.biayaInstalasi,
+                        biayaPph: pc.biayaPph,
+                        biayaOther: pc.biayaOther
+                    };
+                    prNamaCustomerMode.value = 'manual';
+                    prItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
+                    prItemPartNumberMode.value = 'master';
+                    prItemVendorMode.value = 'master';
+                    prItemHargaBeliStatus.value = 'Exclude PPN';
+                    prItemHargaJualStatus.value = 'Exclude PPN';
+                    prItemEditIndex.value = null;
+                    modals.value.addPR = true;
                 };
 
                 // ================== FITUR "PO KE VENDOR" (KHUSUS FINANCE MANAGER) ==================
@@ -9650,7 +10350,33 @@
                             prItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: masterVendor.value[0]?.namaVendor || '', qty: 1, hargaBeli: 0, hargaJual: 0 };
                             prItemPartNumberMode.value = 'master';
                             prItemVendorMode.value = 'master';
+                            prItemHargaBeliStatus.value = 'Exclude PPN';
+                            prItemHargaJualStatus.value = 'Exclude PPN';
                             prItemEditIndex.value = null;
+                        }
+                    } else if (name === 'addPreCals') {
+                        if (!preCalsForm.value.id) {
+                            preCalsForm.value = {
+                                id: null,
+                                noPreCals: '',
+                                kategoriOption: 'Swasta',
+                                namaCustomer: '',
+                                namaProject: '',
+                                items: [],
+                                biayaEkspedisi: 0,
+                                biayaAddInsentif: 0,
+                                biayaBankFee: 0,
+                                biayaInstalasi: 0,
+                                biayaPph: 0,
+                                biayaOther: 0,
+                                catatan: ''
+                            };
+                            preCalsItemForm.value = { partNumber: '', namaBarang: '', deskripsi: '', namaVendor: '', qty: 1, hargaBeli: 0, hargaJual: 0 };
+                            preCalsItemPartNumberMode.value = 'master';
+                            preCalsItemVendorMode.value = 'master';
+                            preCalsItemHargaBeliStatus.value = 'Exclude PPN';
+                            preCalsItemHargaJualStatus.value = 'Exclude PPN';
+                            preCalsItemEditIndex.value = null;
                         }
                     } else if (name === 'addPegawai' && !pegForm.value.id) {
                         pegForm.value = { id: null, nip: '', nama: '', username: '', password: '', jabatan: 'Account Executive', tglMasuk: '', phone: '' };
@@ -9696,6 +10422,7 @@
                 const closeModal = (name) => {
                     modals.value[name] = false;
                     if (name === 'addPR') { prForm.value.id = null; prItemEditIndex.value = null; }
+                    if (name === 'addPreCals') { preCalsForm.value.id = null; preCalsItemEditIndex.value = null; }
                     if (name === 'addPegawai') pegForm.value.id = null;
                     if (name === 'addCustomer') custForm.value.id = null;
                     if (name === 'addVendor') venForm.value.id = null;
@@ -10547,6 +11274,8 @@
                     prPipelineCustomerOptions,
                     prItemPartNumberMode,
                     prItemVendorMode,
+                    prItemHargaBeliStatus,
+                    prItemHargaJualStatus,
                     prItemForm,
                     prItemEditIndex,
                     onPRItemPartNumberChange,
@@ -10558,6 +11287,24 @@
                     savePR,
                     editPR,
                     deletePR,
+                    preCalsForm,
+                    preCalsItemForm,
+                    preCalsItemPartNumberMode,
+                    preCalsItemVendorMode,
+                    preCalsItemHargaBeliStatus,
+                    preCalsItemHargaJualStatus,
+                    preCalsItemEditIndex,
+                    filteredPreCalsList,
+                    calculatedPreCals,
+                    onPreCalsItemPartNumberChange,
+                    addPreCalsItem,
+                    editPreCalsItem,
+                    cancelEditPreCalsItem,
+                    removePreCalsItem,
+                    savePreCals,
+                    editPreCals,
+                    deletePreCals,
+                    convertPreCalsToPR,
                     detailPRData,
                     viewPRDetail,
                     cetakDetailPR,
